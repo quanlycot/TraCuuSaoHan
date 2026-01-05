@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tra Cứu Sao Hạn - Cầu An Đầu Năm</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    rel="stylesheet"
+  />
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    input:focus {
+        background-color: rgba(251, 191, 36, 0.1) !important;
+        border-color: #f59e0b !important;
+    }
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(15, 23, 42, 0.8); z-index: 9999;
+      display: flex; justify-content: center; align-items: center;
+      flex-direction: column; color: white;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-200 p-4 md:p-8 selection:bg-amber-500/30">
+  
+  <div id="loading" class="loading-overlay hidden">
+    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-amber-500 mb-4"></i>
+    <p class="text-lg font-medium">Đang gửi dữ liệu lên Google Sheets...</p>
+  </div>
+
+  <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/20 blur-[100px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-amber-900/10 blur-[100px]"></div>
+  </div>
+
+  <div class="max-w-6xl mx-auto relative z-10 flex flex-col gap-8">
+    <div
+      class="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 flex flex-col md:flex-row items-center justify-between shadow-xl"
+    >
+      <div class="flex items-center gap-4 mb-4 md:mb-0">
+        <div
+          class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl shadow-lg shadow-amber-900/30"
+        >
+          ☯
+        </div>
+        <div>
+          <h1
+            class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500"
+          >
+            Tra Cứu Sao Hạn
+          </h1>
+          <p id="headerYear" class="text-slate-400 text-sm"></p>
+        </div>
+      </div>
+      <div class="flex gap-3 items-center">
+        <label class="text-slate-300 text-sm">Năm xem</label>
+        <input id="selectedYear" type="number" min="1900" max="2099" step="1"
+               class="w-28 bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+        />
+        <button
+          id="btnResetApp"
+          class="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm text-slate-300 transition-colors"
+        >
+          <i class="fa-solid fa-rotate-right w-4 h-4"></i>
+          Làm Mới
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <div class="w-full lg:w-1/3 flex flex-col gap-6">
+        <div
+          class="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 shadow-lg"
+        >
+          <div class="mb-6 pb-4 border-b border-slate-700/50">
+            <h3
+              class="text-amber-500 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Thông tin Gia chủ
+            </h3>
+            <div class="space-y-3">
+              <input
+                type="text"
+                id="ownerName"
+                placeholder="Tên Gia Chủ (VD: Nguyễn Văn A)"
+                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+              />
+              <input
+                type="text"
+                id="address"
+                placeholder="Địa chỉ (VD: Quận 3, TP.HCM)"
+                class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <h3
+              class="text-amber-500 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Thông tin Cá nhân
+            </h3>
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-3">
+                <input
+                  type="text"
+                  id="fullName"
+                  placeholder="Họ và Tên người cần tra"
+                  class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+                />
+                <input
+                  type="text"
+                  id="dharmaName"
+                  placeholder="Pháp danh (nếu có)"
+                  class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase mb-1"
+                    >Năm sinh (DL)</label
+                  >
+                  <input
+                    type="number"
+                    id="birthYear"
+                    placeholder="VD: 1985"
+                    class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase mb-1">Tuổi Âm (tại năm xem)</label>
+                  <input
+                    type="number"
+                    id="ageInput"
+                    placeholder="VD: 41"
+                    class="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div class="flex bg-slate-900/50 rounded-lg p-1 border border-slate-600">
+                <button
+                  type="button"
+                  data-gender="male"
+                  id="btnGenderMale"
+                  class="flex-1 py-2 rounded-md text-sm font-medium transition-all bg-slate-700 text-amber-400 shadow-sm"
+                >
+                  Nam
+                </button>
+                <button
+                  type="button"
+                  data-gender="female"
+                  id="btnGenderFemale"
+                  class="flex-1 py-2 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-slate-200"
+                >
+                  Nữ
+                </button>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  id="btnCalculate"
+                  type="button"
+                  class="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg transition-all"
+                >
+                  <i class="fa-solid fa-magnifying-glass w-4 h-4"></i>
+                  Tra Cứu
+                </button>
+                <button
+                  id="btnAddToList"
+                  type="button"
+                  class="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-900 font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-amber-900/20"
+                >
+                  <i class="fa-solid fa-user-plus w-4 h-4"></i>
+                  Lưu Lại
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full lg:w-2/3">
+        <div
+          id="resultCard"
+          class="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 md:p-8 shadow-lg min-h-[400px] flex flex-col justify-center"
+        >
+          <div class="text-center opacity-40" id="resultEmpty">
+            <i class="fa-regular fa-star w-16 h-16 mx-auto mb-4 text-slate-400 text-6xl"></i>
+            <p class="text-lg">Nhập thông tin bên trái để xem kết quả</p>
+          </div>
+          <div id="resultContent" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="listSection"
+      class="hidden bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 md:p-8 shadow-lg"
+    >
+      <div
+        class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-6 border-b border-slate-700/50 pb-4"
+      >
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-regular fa-scroll w-5 h-5 text-amber-500"></i>
+            Danh Sách Cầu An
+          </h2>
+          <p id="savedCount" class="text-slate-400 text-xs mt-1">Đã lưu 0 người</p>
+        </div>
+        <div class="flex gap-2">
+            <button
+                id="btnSaveToSheets"
+                class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-900/20 transition-all text-sm"
+            >
+                <i class="fa-solid fa-cloud-arrow-up w-4 h-4"></i>
+                Lưu lên Google Sheets
+            </button>
+
+            <button
+                id="btnExport"
+                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 transition-all text-sm"
+            >
+                <i class="fa-solid fa-print w-4 h-4"></i>
+                Xuất Excel (In A4)
+            </button>
+        </div>
+      </div>
+
+      <div id="groupsContainer" class="space-y-6"></div>
+    </div>
+    
+    <footer class="text-center text-slate-500 text-sm py-6 border-t border-slate-800">
+        <p>Người viết chương trình: <span class="text-amber-500 font-bold">Đồng Thịnh</span></p>
+    </footer>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CẤU HÌNH LIÊN KẾT GOOGLE SHEETS
+    // BẠN HÃY THAY LINK WEB APP CỦA BẠN VÀO DƯỚI ĐÂY:
+    // =========================================================================
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAO78kVRGDWVk3czzkHSe90c2xgHObg2AvsKoAkkHkjfOzBKujd10Oa-WrM1vh2leX/exec"; 
+    // Ví dụ: "https://script.google.com/macros/s/AKfycbx.../exec"
+
+    // ----------------------------------------------------------------------------
+    // 1. DATA & CONSTANTS
+    // ----------------------------------------------------------------------------
+    const Gender = { MALE: "male", FEMALE: "female" };
+    const CAN = ["Canh", "Tân", "Nhâm", "Quý", "Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ"];
+    const CHI = ["Thân", "Dậu", "Tuất", "Hợi", "Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi"];
+
+    const SAO_NAM_LIST = ["La Hầu", "Thổ Tú", "Thủy Diệu", "Thái Bạch", "Thái Dương", "Vân Hớn", "Kế Đô", "Thái Âm", "Mộc Đức"];
+    const SAO_NU_LIST = ["Kế Đô", "Vân Hớn", "Mộc Đức", "Thái Âm", "Thổ Tú", "La Hầu", "Thái Dương", "Thái Bạch", "Thủy Diệu"];
+
+    const SAO_DATA = {
+      "La Hầu": { name: "La Hầu", type: "bad", description: "Khẩu thiệt tinh. Chủ về thị phi, lời ăn tiếng nói, kiện tụng, bệnh về tai mắt, máu huyết.", advice: "Nên cẩn trọng lời nói, tránh tranh chấp. Kỵ tháng 1, 7 âm lịch. Cúng sao giải hạn vào ngày mùng 8 âm lịch hàng tháng." },
+      "Thổ Tú": { name: "Thổ Tú", type: "neutral", description: "Ách Tinh. Chủ về tiểu nhân hãm hại, gia đạo bất hòa, chăn nuôi thua lỗ.", advice: "Cẩn thận kẻ ném đá giấu tay. Giữ hòa khí gia đình. Kỵ tháng 4, 8 âm lịch. Cúng ngày 19 âm lịch." },
+      "Thủy Diệu": { name: "Thủy Diệu", type: "good", description: "Phước lộc tinh. Tốt cho tài lộc, đi xa. Nhưng kỵ sông nước, dễ bị tai tiếng thị phi.", advice: "Nên đi làm ăn xa sẽ có lợi. Tránh sông nước, đò giang. Kỵ tháng 4, 8. Cúng ngày 21 âm lịch." },
+      "Thái Bạch": { name: "Thái Bạch", type: "bad", description: "Hung tinh mạnh nhất. 'Thái Bạch quét sạch cửa nhà'. Hao tài tốn của, đau ốm, việc gì cũng trắc trở.", advice: "Đại kỵ màu trắng. Cẩn trọng tiền bạc, không nên cho vay mượn hay đầu tư lớn. Kỵ tháng 5. Cúng ngày 15 âm lịch." },
+      "Thái Dương": { name: "Thái Dương", type: "good", description: "Đệ nhất cát tinh. Rất tốt cho nam giới (công danh xán lạn). Nữ giới cũng tốt nhưng vất vả hơn.", advice: "Nam giới tranh thủ thời cơ phát triển sự nghiệp. Tốt nhất tháng 6, 10. Cúng ngày 27 âm lịch." },
+      "Vân Hớn": { name: "Vân Hớn", type: "neutral", description: "Hung tinh nhẹ. Chủ về nóng nảy, bảo thủ, giấy tờ pháp lý, bệnh sản nạn (nữ).", advice: "Giữ gìn lời nói, tránh nóng giận mất khôn. Kỵ tháng 2, 8. Cúng ngày 29 âm lịch." },
+      "Kế Đô": { name: "Kế Đô", type: "bad", description: "Hung tinh (Nữ kỵ hơn Nam). Chủ về ám muội, thị phi, buồn rầu, họa vô đơn chí.", advice: "Nên nhẫn nhịn, làm việc thiện, hạn chế đi xa. Kỵ tháng 3, 9. Cúng ngày 18 âm lịch." },
+      "Thái Âm": { name: "Thái Âm", type: "good", description: "Cát tinh. Chủ về danh lợi, hỉ sự, bất động sản. Tốt cho cả nam và nữ.", advice: "Cầu danh cầu lợi đều thuận. Tốt nhất tháng 9. Cúng ngày 26 âm lịch." },
+      "Mộc Đức": { name: "Mộc Đức", type: "good", description: "Cát tinh. Tốt cho việc dựng vợ gả chồng, thi cử, công danh.", advice: "Nên làm việc phúc đức để duy trì may mắn. Đề phòng bệnh mắt. Tốt tháng 10, 12. Cúng ngày 25 âm lịch." },
+    };
+
+    const HAN_LIST = ["Huỳnh Tuyền", "Tam Kheo", "Ngũ Mộ", "Thiên Tinh", "Tán Tận", "Thiên La", "Địa Võng", "Diêm Vương"];
+    const HAN_DATA = {
+      "Huỳnh Tuyền": { name: "Huỳnh Tuyền", type: "bad", description: "Đại hạn về sức khỏe. 'Huỳnh Tuyền bệnh nặng nguy vong'. Dễ mắc bệnh đau đầu, chóng mặt.", advice: "Kỵ sông nước, không nên bảo lãnh cho người khác. Chú ý sức khỏe tim mạch, huyết áp." },
+      "Tam Kheo": { name: "Tam Kheo", type: "neutral", description: "Tiểu hạn. Chủ về chân tay, đau mắt, xương khớp.", advice: "Tránh trèo cao, cẩn thận đi lại xe cộ. Chú ý các bệnh về xương khớp, phong thấp." },
+      "Ngũ Mộ": { name: "Ngũ Mộ", type: "bad", description: "Tiểu hạn. 'Ngũ Mộ hạn xấu tổn tài'. Dễ mất mát tiền của, mua phải đồ giả.", advice: "Không nên cho người lạ ngủ nhờ. Mua bán cần có hóa đơn, tránh hàng lậu. Giữ gìn tiền bạc." },
+      "Thiên Tinh": { name: "Thiên Tinh", type: "neutral", description: "Xấu. Chủ về thị phi, kiện cáo, ngộ độc thực phẩm.", advice: "Ăn chín uống sôi, đề phòng ngộ độc. Làm việc minh bạch để tránh kiện tụng." },
+      "Tán Tận": { name: "Tán Tận", type: "bad", description: "Đại hạn. 'Tán Tận nạn đến thình lình'. Nam giới kỵ hơn. Hao tài, tai nạn bất ngờ.", advice: "Không nên mang nhiều tiền bạc, trang sức khi ra đường. Cẩn thận tai nạn xe cộ, lao động." },
+      "Thiên La": { name: "Thiên La", type: "bad", description: "Xấu. 'Thiên La bệnh phấn quái kỳ'. Tâm bệnh, lo âu, gia đạo bất an.", advice: "Giữ tâm lý ổn định, tránh ghen tuông vô cớ. Nên lễ Phật, cầu an để tâm thanh tịnh." },
+      "Địa Võng": { name: "Địa Võng", type: "bad", description: "Xấu. 'Địa Võng nhiều nỗi buồn than'. Dễ vướng vòng lao lý, thị phi, rắc rối.", advice: "Làm ăn chân chính, tuân thủ pháp luật. Tránh đi chơi khuya. Kỵ đi với người khác giới lúc tối trời." },
+      "Diêm Vương": { name: "Diêm Vương", type: "bad", description: "Xấu về sức khỏe người già/người bệnh. Nhưng tốt cho kinh doanh nếu khỏe mạnh.", advice: "Người đau ốm cần đi khám chữa ngay. Người khỏe mạnh có thể phát triển kinh doanh tài lộc." },
+    };
+
+    // ----------------------------------------------------------------------------
+    // 2. HELPER FUNCTIONS
+    // ----------------------------------------------------------------------------
+    const getCanChi = (year) => {
+      const can = CAN[year % 10];
+      const chi = CHI[year % 12];
+      return can + " " + chi;
+    };
+
+    const calculateSaoHan = (birthYear, yearToCheck, gen) => {
+      const age = yearToCheck - birthYear + 1;
+      if (age < 10) return null;
+
+      const saoIndex = (age - 10) % 9;
+      const saoName = gen === Gender.MALE ? SAO_NAM_LIST[saoIndex] : SAO_NU_LIST[saoIndex];
+
+      const tens = Math.floor(age / 10);
+      const units = age % 10;
+      let hanIndex = 0;
+
+      if (gen === Gender.MALE) {
+        hanIndex = (tens + units - 1) % 8;
+      } else {
+        const startNode = 4;
+        const steps = (tens - 1) + units;
+        let rawIndex = (startNode - steps) % 8;
+        if (rawIndex < 0) rawIndex = ((rawIndex % 8) + 8) % 8;
+        hanIndex = rawIndex;
+      }
+      return { sao: saoName, han: HAN_LIST[hanIndex], age };
+    };
+
+    // ----------------------------------------------------------------------------
+    // 3. STATE
+    // ----------------------------------------------------------------------------
+    const realCurrentYear = new Date().getFullYear();
+    let selectedYear = realCurrentYear;
+    let gender = Gender.MALE;
+    let result = null;
+    let showAdvice = false;
+    let savedProfiles = [];
+    let deleteConfirmId = null;
+
+    // ----------------------------------------------------------------------------
+    // 4. DOM ELEMENTS
+    // ----------------------------------------------------------------------------
+    const elHeaderYear = document.getElementById("headerYear");
+    const elOwnerName = document.getElementById("ownerName");
+    const elAddress = document.getElementById("address");
+    const elFullName = document.getElementById("fullName");
+    const elDharmaName = document.getElementById("dharmaName");
+    const elBirthYear = document.getElementById("birthYear");
+    const elAgeInput = document.getElementById("ageInput");
+    const elBtnGenderMale = document.getElementById("btnGenderMale");
+    const elBtnGenderFemale = document.getElementById("btnGenderFemale");
+    const elBtnCalculate = document.getElementById("btnCalculate");
+    const elBtnAddToList = document.getElementById("btnAddToList");
+    const elBtnResetApp = document.getElementById("btnResetApp");
+    const elBtnExport = document.getElementById("btnExport");
+    const elBtnSaveToSheets = document.getElementById("btnSaveToSheets");
+    const elResultEmpty = document.getElementById("resultEmpty");
+    const elResultContent = document.getElementById("resultContent");
+    const elListSection = document.getElementById("listSection");
+    const elSavedCount = document.getElementById("savedCount");
+    const elGroupsContainer = document.getElementById("groupsContainer");
+    const elSelectedYear = document.getElementById("selectedYear");
+    const elLoading = document.getElementById("loading");
+
+    // ----------------------------------------------------------------------------
+    // 5. RENDER FUNCTIONS
+    // ----------------------------------------------------------------------------
+    const renderHeader = () => {
+      elHeaderYear.textContent = "Xuân " + getCanChi(selectedYear) + " (" + selectedYear + ")";
+      elSelectedYear.value = selectedYear;
+    };
+
+    const renderGenderButtons = () => {
+      if (gender === Gender.MALE) {
+        elBtnGenderMale.className = "flex-1 py-2 rounded-md text-sm font-medium transition-all bg-slate-700 text-amber-400 shadow-sm";
+        elBtnGenderFemale.className = "flex-1 py-2 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-slate-200";
+      } else {
+        elBtnGenderMale.className = "flex-1 py-2 rounded-md text-sm font-medium transition-all text-slate-400 hover:text-slate-200";
+        elBtnGenderFemale.className = "flex-1 py-2 rounded-md text-sm font-medium transition-all bg-slate-700 text-amber-400 shadow-sm";
+      }
+    };
+
+    const renderResult = () => {
+      if (!result) {
+        elResultEmpty.classList.remove("hidden");
+        elResultContent.classList.add("hidden");
+        elResultContent.innerHTML = "";
+        return;
+      }
+      elResultEmpty.classList.add("hidden");
+      elResultContent.classList.remove("hidden");
+
+      const saoInfo = SAO_DATA[result.sao];
+      const hanInfo = HAN_DATA[result.han];
+      const saoColorClass = saoInfo.type === "good" ? "text-emerald-400 border-emerald-500/30 bg-emerald-900/20" : saoInfo.type === "bad" ? "text-rose-400 border-rose-500/30 bg-rose-900/20" : "text-amber-400 border-amber-500/30 bg-amber-900/20";
+      const hanColorClass = hanInfo.type === "good" ? "text-emerald-400 border-emerald-500/30 bg-emerald-900/20" : hanInfo.type === "bad" ? "text-rose-400 border-rose-500/30 bg-rose-900/20" : "text-amber-400 border-amber-500/30 bg-amber-900/20";
+
+      let overallText = "";
+      if (saoInfo.type === "good" && hanInfo.type !== "bad") overallText = "Vận khí năm này khá tốt, công việc hanh thông, tài lộc dồi dào.";
+      else if (saoInfo.type === "bad" || hanInfo.type === "bad") overallText = "Vận khí có phần trắc trở. Nên giữ gìn sức khỏe, đi đứng cẩn thận.";
+      else overallText = "Năm này đan xen giữa cơ hội và thử thách. Cần vững tâm bền chí.";
+
+      const adviceSection = showAdvice
+        ? `<div class="mt-4 p-6 bg-slate-900/80 rounded-xl border border-indigo-500/20 shadow-inner">
+            <h4 class="text-indigo-400 font-bold mb-3 text-sm uppercase tracking-wide">Tổng Luận Năm ${selectedYear}</h4>
+            <p class="text-slate-300 text-sm leading-7">Năm ${selectedYear} gặp sao <strong>${saoInfo.name}</strong> và hạn <strong>${hanInfo.name}</strong>.<br><br>${overallText}<br><br><em>"Đức năng thắng số" - Hãy giữ tâm lành, ý thiện thì vạn sự sẽ an nhiên.</em></p>
+           </div>` : "";
+
+      elResultContent.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700/50 pb-6">
+            <div>
+              <h2 class="text-2xl font-bold text-white flex items-center gap-2">${result.fullName} ${result.dharmaName ? `<span class="text-base font-normal text-slate-400">(${result.dharmaName})</span>` : ""}</h2>
+              <div class="text-amber-500 text-sm mt-1 font-medium">${result.age} tuổi (tại ${selectedYear}) - ${result.lunarYear}</div>
+            </div>
+            <div class="px-4 py-2 bg-slate-900/50 rounded-lg border border-slate-700/50 text-slate-300 text-sm">${gender === Gender.MALE ? "Nam Mạng" : "Nữ Mạng"}</div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${saoColorClass} border-opacity-50">
+              <div class="flex items-center gap-2 mb-3"><i class="fa-regular fa-star w-5 h-5 opacity-80"></i><h3 class="font-bold text-sm uppercase tracking-wider opacity-80">Sao Chiếu Mệnh</h3></div>
+              <div class="mb-2"><span class="text-2xl font-bold tracking-tight">${saoInfo.name}</span><span class="ml-3 text-xs px-2 py-0.5 rounded-full border border-current opacity-70">${saoInfo.type === "good" ? "Cát" : saoInfo.type === "bad" ? "Hung" : "Trung"}</span></div>
+              <p class="text-sm opacity-90 mb-3 italic leading-relaxed">${saoInfo.description}</p>
+              <div class="bg-black/20 rounded p-3 text-xs leading-relaxed"><strong class="opacity-70 uppercase text-[10px] block mb-1">Lời khuyên:</strong>${saoInfo.advice}</div>
+            </div>
+            <div class="rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${hanColorClass} border-opacity-50">
+              <div class="flex items-center gap-2 mb-3"><i class="fa-regular fa-scroll w-5 h-5 opacity-80"></i><h3 class="font-bold text-sm uppercase tracking-wider opacity-80">Hạn Niên</h3></div>
+              <div class="mb-2"><span class="text-2xl font-bold tracking-tight">${hanInfo.name}</span><span class="ml-3 text-xs px-2 py-0.5 rounded-full border border-current opacity-70">${hanInfo.type === "good" ? "Cát" : hanInfo.type === "bad" ? "Hung" : "Trung"}</span></div>
+              <p class="text-sm opacity-90 mb-3 italic leading-relaxed">${hanInfo.description}</p>
+              <div class="bg-black/20 rounded p-3 text-xs leading-relaxed"><strong class="opacity-70 uppercase text-[10px] block mb-1">Lời khuyên:</strong>${hanInfo.advice}</div>
+            </div>
+          </div>
+          <div class="pt-4"><button id="btnToggleAdvice" class="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-xl transition-all text-sm font-medium flex items-center justify-center gap-2"><span class="text-lg">✨</span>${showAdvice ? "Ẩn lời bình giải" : "Xem lời bình giải chi tiết"}</button>${adviceSection}</div>
+        </div>
+      `;
+      document.getElementById("btnToggleAdvice").addEventListener("click", () => { showAdvice = !showAdvice; renderResult(); });
+    };
+
+    const renderList = () => {
+      if (savedProfiles.length === 0) {
+        elListSection.classList.add("hidden");
+        elSavedCount.textContent = "Đã lưu 0 người";
+        elGroupsContainer.innerHTML = "";
+        return;
+      }
+      elListSection.classList.remove("hidden");
+      elSavedCount.textContent = "Đã lưu " + savedProfiles.length + " người";
+
+      const groups = {};
+      savedProfiles.forEach((p) => {
+        const key = (p.ownerName || "Gia chủ") + "|" + (p.address || "");
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(p);
+      });
+
+      let html = "";
+      Object.entries(groups).forEach(([key, profiles], idx) => {
+        const [owner, addr] = key.split("|");
+        html += `
+          <div class="bg-slate-900/50 rounded-xl overflow-hidden border border-slate-700/50">
+            <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+              <div class="text-sm"><span class="text-slate-400">Gia chủ:</span> <span class="text-amber-400 font-bold">${owner}</span><span class="mx-2 text-slate-600">|</span><span class="text-slate-400">Đ/C:</span> <span class="text-slate-300">${addr}</span></div>
+              <div class="text-xs text-slate-500 bg-slate-950 px-2 py-1 rounded">Nhóm ${idx + 1}</div>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-300"><thead class="bg-slate-800/30 text-xs uppercase text-slate-500 font-medium"><tr><th class="px-4 py-3 text-center w-12">#</th><th class="px-4 py-3">Họ Tên</th><th class="px-4 py-3">Pháp Danh</th><th class="px-4 py-3">Tuổi/Năm</th><th class="px-4 py-3">Sao</th><th class="px-4 py-3">Hạn</th><th class="px-4 py-3 text-right">Tác vụ</th></tr></thead><tbody class="divide-y divide-slate-800">
+        `;
+        profiles.forEach((p, pIdx) => {
+          const calc = calculateSaoHan(p.birthYear, selectedYear, p.gender);
+          const age = selectedYear - p.birthYear + 1;
+          const isConfirm = deleteConfirmId === p.id;
+          const btnClass = isConfirm ? "p-1.5 rounded-lg transition-all flex items-center gap-1 bg-rose-500 text-white hover:bg-rose-600 px-3 shadow-lg" : "p-1.5 rounded-lg transition-all flex items-center gap-1 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400";
+          html += `<tr class="hover:bg-slate-800/30 transition-colors"><td class="px-4 py-3 text-center opacity-50">${pIdx + 1}</td><td class="px-4 py-3 font-medium text-white">${p.fullName}</td><td class="px-4 py-3 opacity-70">${p.dharmaName || ""}</td><td class="px-4 py-3"><div class="flex flex-col"><span class="font-bold text-white">${age}t</span><span class="text-xs opacity-50">${getCanChi(p.birthYear)}</span></div></td><td class="px-4 py-3">${calc ? calc.sao : ""}</td><td class="px-4 py-3">${calc ? calc.han : ""}</td><td class="px-4 py-3 text-right"><button type="button" class="${btnClass}" data-delete-id="${p.id}">${isConfirm ? `<i class="fa-solid fa-trash w-3 h-3 animate-pulse"></i><span class="text-xs font-bold whitespace-nowrap">Xóa?</span>` : `<i class="fa-solid fa-trash w-4 h-4"></i>`}</button></td></tr>`;
+        });
+        html += `</tbody></table></div></div>`;
+      });
+      elGroupsContainer.innerHTML = html;
+      elGroupsContainer.querySelectorAll("[data-delete-id]").forEach((btn) => {
+        btn.addEventListener("click", () => handleDelete(btn.getAttribute("data-delete-id")));
+      });
+    };
+
+    // ----------------------------------------------------------------------------
+    // 6. HANDLERS
+    // ----------------------------------------------------------------------------
+    const handleBirthYearChange = (val) => {
+      elBirthYear.value = val;
+      if (val && val.length === 4) {
+        const year = parseInt(val, 10);
+        if (year >= 1900 && year <= selectedYear + 1) {
+          const calculatedAge = selectedYear - year + 1;
+          elAgeInput.value = calculatedAge > 0 ? calculatedAge.toString() : "";
+        } else elAgeInput.value = "";
+      } else elAgeInput.value = "";
+    };
+
+    const handleAgeChange = (val) => {
+      elAgeInput.value = val;
+      if (val) {
+        const age = parseInt(val, 10);
+        if (age > 0 && age < 120) {
+          const calculatedYear = selectedYear - age + 1;
+          elBirthYear.value = calculatedYear >= 1900 && calculatedYear <= selectedYear + 1 ? calculatedYear.toString() : "";
+        } else elBirthYear.value = "";
+      } else elBirthYear.value = "";
+    };
+
+    const handleCalculate = () => {
+      showAdvice = false;
+      const birthYearVal = elBirthYear.value.trim();
+      const ageVal = elAgeInput.value.trim();
+      if (!birthYearVal && !ageVal) { alert("Vui lòng nhập năm sinh hoặc tuổi."); return; }
+      let yearNum = birthYearVal ? parseInt(birthYearVal, 10) : 0;
+      if (!yearNum && ageVal) {
+        const age = parseInt(ageVal, 10);
+        yearNum = selectedYear - age + 1;
+      }
+      const age = selectedYear - yearNum + 1;
+      if (age < 10) { alert("Chương trình chỉ hỗ trợ tính sao hạn cho người từ 10 tuổi trở lên."); return; }
+      const calc = calculateSaoHan(yearNum, selectedYear, gender);
+      if (!calc) return;
+      result = { fullName: elFullName.value.trim() || "Người Tra Cứu", dharmaName: elDharmaName.value.trim(), age: calc.age, lunarYear: getCanChi(yearNum), sao: calc.sao, han: calc.han };
+      renderResult();
+    };
+
+    const handleAddToList = () => {
+      const birthYearVal = elBirthYear.value.trim();
+      const ageVal = elAgeInput.value.trim();
+      if (!birthYearVal && !ageVal) { alert("Vui lòng nhập Năm sinh hoặc Tuổi."); return; }
+      const fullName = elFullName.value.trim();
+      if (!fullName) { alert("Vui lòng nhập Họ tên để lưu vào danh sách."); return; }
+      let yearNum = birthYearVal ? parseInt(birthYearVal, 10) : 0;
+      if (!yearNum && ageVal) {
+        const age = parseInt(ageVal, 10);
+        yearNum = selectedYear - age + 1;
+      }
+      const profile = { id: Date.now().toString() + Math.random().toString(36).slice(2), fullName: fullName, dharmaName: elDharmaName.value.trim(), birthYear: yearNum, gender: gender, ownerName: elOwnerName.value.trim() || "Gia đình", address: elAddress.value.trim() };
+      savedProfiles.push(profile);
+      const calc = calculateSaoHan(profile.birthYear, selectedYear, profile.gender);
+      if (calc) result = { fullName: profile.fullName, dharmaName: profile.dharmaName, age: calc.age, lunarYear: getCanChi(profile.birthYear), sao: calc.sao, han: calc.han };
+      
+      // Reset input và focus lại ô Họ tên
+      elFullName.value = ""; elDharmaName.value = ""; elBirthYear.value = ""; elAgeInput.value = ""; deleteConfirmId = null;
+      renderList(); renderResult(); 
+      elFullName.focus();
+    };
+
+    const handleDelete = (id) => {
+      if (deleteConfirmId === id) { savedProfiles = savedProfiles.filter((p) => p.id !== id); deleteConfirmId = null; renderList(); }
+      else { deleteConfirmId = id; renderList(); setTimeout(() => { if (deleteConfirmId === id) { deleteConfirmId = null; renderList(); } }, 3000); }
+    };
+
+    const handleResetApp = () => {
+      if (!window.confirm("Làm mới toàn bộ ứng dụng?")) return;
+      savedProfiles = []; result = null; showAdvice = false; deleteConfirmId = null;
+      elOwnerName.value = ""; elAddress.value = ""; elFullName.value = ""; elDharmaName.value = ""; elBirthYear.value = ""; elAgeInput.value = "";
+      renderGenderButtons(); renderResult(); renderList(); renderHeader();
+    };
+
+    // ----------------------------------------------------------------------------
+    // GOOGLE SHEETS EXPORT LOGIC
+    // ----------------------------------------------------------------------------
+    const handleSaveToSheets = async () => {
+        if (savedProfiles.length === 0) {
+            alert("Danh sách đang trống, không có gì để gửi.");
+            return;
+        }
+        if (GOOGLE_SCRIPT_URL.includes("DÁN_URL")) {
+            alert("Bạn chưa cấu hình URL Web App.\nBạn hãy mở file HTML, tìm dòng chứa GOOGLE_SCRIPT_URL và dán link của bạn vào.");
+            return;
+        }
+
+        if(!confirm("Bạn có chắc chắn muốn gửi " + savedProfiles.length + " người này lên Google Sheets không?")) return;
+
+        // Hiển thị loading
+        elLoading.classList.remove("hidden");
+
+        // Chuẩn bị dữ liệu
+        const dataToSend = savedProfiles.map(p => {
+            const calc = calculateSaoHan(p.birthYear, selectedYear, p.gender);
+            return {
+                ownerName: p.ownerName,
+                address: p.address,
+                fullName: p.fullName,
+                dharmaName: p.dharmaName,
+                birthYear: p.birthYear,
+                
+                // --- ĐÃ THÊM DÒNG NÀY ĐỂ FIX LỖI GIỚI TÍNH ---
+                gender: p.gender, 
+                // ---------------------------------------------
+                
+                age: calc ? calc.age : 0,
+                sao: calc ? calc.sao : "",
+                han: calc ? calc.han : ""
+            };
+        });
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(dataToSend)
+            });
+
+            const json = await response.json();
+            
+            elLoading.classList.add("hidden");
+
+            if (json.result === "success") {
+                alert("✅ Đã lưu thành công!");
+                // savedProfiles = []; renderList(); // Bỏ comment nếu muốn xóa list sau khi lưu
+            } else {
+                alert("❌ Có lỗi từ Google: " + JSON.stringify(json));
+            }
+
+        } catch (error) {
+            elLoading.classList.add("hidden");
+            console.error(error);
+            alert("❌ Lỗi kết nối tới Server. Vui lòng thử lại.");
+        }
+    };
+
+    // ----------------------------------------------------------------------------
+    // EXCELJS EXPORT
+    // ----------------------------------------------------------------------------
+    const handleExport = async () => {
+      if (savedProfiles.length === 0) { alert("Danh sách trống."); return; }
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Danh Sách Cầu An");
+      sheet.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } };
+      sheet.columns = [{ width: 6 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 8 }, { width: 12 }, { width: 12 }];
+      const fontNormal = { name: 'Times New Roman', size: 12 };
+      const fontHeader = { name: 'Times New Roman', size: 12, bold: true };
+      const borderStyle = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+
+      sheet.mergeCells('A1:G1');
+      const titleRow = sheet.getCell('A1'); titleRow.value = "DANH SÁCH CẦU AN ĐẦU NĂM"; titleRow.alignment = { horizontal: 'center' }; titleRow.font = { name: 'Times New Roman', size: 16, bold: true };
+      sheet.mergeCells('A2:G2');
+      const subRow = sheet.getCell('A2'); subRow.value = "Xuân " + getCanChi(selectedYear) + " - " + selectedYear; subRow.alignment = { horizontal: 'center' }; subRow.font = { name: 'Times New Roman', size: 14, italic: true };
+      sheet.addRow([]);
+
+      const groups = {};
+      savedProfiles.forEach((p) => { const k = (p.ownerName || "Gia chủ") + "|" + (p.address || ""); if (!groups[k]) groups[k] = []; groups[k].push(p); });
+
+      Object.entries(groups).forEach(([key, profiles]) => {
+        const [owner, addr] = key.split("|");
+        const gr = sheet.addRow([`Gia chủ: ${owner}  -  Địa chỉ: ${addr}`]);
+        sheet.mergeCells(`A${gr.number}:G${gr.number}`);
+        gr.getCell(1).font = { name: 'Times New Roman', size: 13, bold: true }; gr.getCell(1).border = borderStyle; gr.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFEFEF' } };
+
+        const hr = sheet.addRow(["STT", "HỌ VÀ TÊN", "PHÁP DANH", "NIÊN CANH", "TUỔI", "SAO", "HẠN"]);
+        hr.eachCell((cell) => { cell.font = fontHeader; cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.border = borderStyle; });
+
+        profiles.forEach((p, idx) => {
+          const calc = calculateSaoHan(p.birthYear, selectedYear, p.gender);
+          const r = sheet.addRow([idx + 1, p.fullName.toUpperCase(), p.dharmaName || "", getCanChi(p.birthYear), selectedYear - p.birthYear + 1, calc ? calc.sao : "", calc ? calc.han : ""]);
+          r.eachCell((cell, col) => {
+            cell.font = fontNormal; cell.border = borderStyle;
+            if (col !== 2 && col !== 3) cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            else cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+          });
+        });
+        sheet.addRow([]);
+      });
+
+      sheet.addRow([]);
+      const fr = sheet.addRow(["Người viết chương trình: Đồng Thịnh"]);
+      sheet.mergeCells(`A${fr.number}:G${fr.number}`);
+      fr.getCell(1).font = { name: 'Times New Roman', size: 11, italic: true }; fr.getCell(1).alignment = { horizontal: 'right' };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, `Danh_Sach_Cau_An_${selectedYear}.xlsx`);
+    };
+
+    // ----------------------------------------------------------------------------
+    // 7. INIT
+    // ----------------------------------------------------------------------------
+    const init = () => {
+      elSelectedYear.value = selectedYear;
+      renderHeader(); renderGenderButtons(); renderResult(); renderList();
+
+      elBirthYear.addEventListener("input", (e) => handleBirthYearChange(e.target.value));
+      elAgeInput.addEventListener("input", (e) => handleAgeChange(e.target.value));
+
+      elBtnGenderMale.addEventListener("click", () => { gender = Gender.MALE; renderGenderButtons(); });
+      elBtnGenderFemale.addEventListener("click", () => { gender = Gender.FEMALE; renderGenderButtons(); });
+      elBtnCalculate.addEventListener("click", handleCalculate);
+      elBtnAddToList.addEventListener("click", handleAddToList);
+      elBtnResetApp.addEventListener("click", handleResetApp);
+      elBtnExport.addEventListener("click", handleExport);
+      elBtnSaveToSheets.addEventListener("click", handleSaveToSheets); // Gán sự kiện cho nút mới
+      elSelectedYear.addEventListener("change", (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1900) { selectedYear = val; if(elBirthYear.value) handleBirthYearChange(elBirthYear.value); renderHeader(); renderResult(); renderList(); }
+      });
+
+      const inputIds = ["ownerName", "address", "fullName", "dharmaName", "birthYear", "ageInput"];
+      inputIds.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (id === "birthYear" || id === "ageInput") {
+               handleCalculate();
+            } else {
+               const nextId = inputIds[index + 1];
+               if (nextId) document.getElementById(nextId).focus();
+            }
+          }
+        });
+      });
+    };
+
+    init();
+  </script>
+</body>
+</html>
